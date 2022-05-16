@@ -7,24 +7,40 @@ This guide introduces how to build a PINN model with continuous time method for 
 The 2d unsteady cylinder flow example simulate solution (pressure and velocity) of following problem
 
 <div align="center">    
-<img src="../NS.png" width = "400" align=center />
-</div>
-
-with <img src="../../source/img/darcyeqf.png" width = "260" align=center /> and the Dirichlet boundary condition is set to be 
-<div align="center">
-<img src="../../docs/source/img/darcyeqbc.png" width = "400" align=center />
+<img src="NS.png" width = "400" align=center />
 </div>
 
 
-Following graphs plot the pressure from training the model on a 100 by 100 grid.
-
-
+Following graphs plot the horizional velocity from training the model on given node from openFoam.
 <div align="center">    
-<img src="../../docs/source/img/darcy_rslt_100x100.png" width = "700" align=center />
+<img src="cylinder_openfoam.png" width = "400" align=center />
 </div>
 
-## How to construct a PINN model
+The result which is simulated through PINNs is showned as below, and the result is almost the same as the result from openfoam
+<div align="center">    
+<img src="result.png" width = "700" align=center />
+</div>
 
+## How to run the model 
+
+1) Model composition
+The model contains 4 main parts, which are datasets, pinn_solver, train or predict code, dataload module.
+
+2) Run model
+
+    a. download PaddleScience code
+        - confirm working directory
+        - downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:    
+        
+    ```
+    git clone https://github.com/PaddlePaddle/PaddleScience.git
+    ```
+
+   *(当前测试已经从git下载PaddleScience-develop.zip至本地)*
+* 将PaddleScience解压到目标路径，并修改文件夹名称为PaddleScience
+
+A PINN model is jointly composed using what used to be a traditional PDE setup and
+1
 A PINN model is jointly composed using what used to be a traditional PDE setup and
 a neural net approximating the solution. The PDE part includes specific
 differential equations enforcing the physical law, a geometry that bounds
