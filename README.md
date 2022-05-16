@@ -18,7 +18,7 @@ Following graphs plot the horizional velocity from training the model on given n
 
 The result which is simulated through PINNs is showned as below, and the result is almost the same as the result from openfoam
 <div align="center">    
-<img src="result.png" width = "700" align=center />
+<img src="result.png" width = "400" align=center />
 </div>
 
 ## How to run the model 
@@ -29,15 +29,19 @@ The model contains 4 main parts, which are datasets, pinn_solver, train or predi
 2) Run model
 
     a. download PaddleScience code
-        - confirm working directory
-        - downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:    
+        
+    - confirm working directory
+        
+    - downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:   
+        
         
     ```
     git clone https://github.com/PaddlePaddle/PaddleScience.git
     ```
 
-   *(当前测试已经从git下载PaddleScience-develop.zip至本地)*
-* 将PaddleScience解压到目标路径，并修改文件夹名称为PaddleScience
+    - rename the folder name as PaddleScience  
+      
+
 
 A PINN model is jointly composed using what used to be a traditional PDE setup and
 1
