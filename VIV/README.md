@@ -22,7 +22,37 @@ This model assumes a constant reduction velocity `Ur=8.5（Ur=u/(fn*d))`, corres
 
 ## How to run this model
 
-### Install PaddlePaddle and
+### Install PaddlePaddle and PaddleScience
+
+**Install PaddlePaddle**
+
+The PaddlePaddle development version is required, and user can choose the appropriate version based on simulating platform(such as in linux os and cuda10.1 platform, `python -m pip install paddlepaddle-gpu==0.0.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/gpu/develop.html` can be used for installing) on the [PaddlePaddle](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html) 
+
+**Download PaddleScience code**
+ 
+        
+   - Confirm working directory
+        
+   - Downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:   
+        
+    git clone https://github.com/PaddlePaddle/PaddleScience.git
+
+ **Install dependent libraries**
+ 
+    
+   - Rename the folder name as PaddleScience if not
+    
+   - Change working directory to PaddleScience
+    
+   - Install dependent libraries by `pip install -r requirements` 
+    
+ **Set environment variables**
+ 
+    
+   **-Set environment** 
+    
+   Setting environment by `%env PYTHONPATH=/user_path*/PaddleScience`, and if editing bash files, using `export PYTHONPATH=$PYTHONPATH:/user_path*/PaddleScience/` instead
+
 
 ### Confirm the governing equation 
 
@@ -85,5 +115,8 @@ While training, net_params can be saved each 2000 epochs in `./examples/fsi/chec
 net_params = '/examples/fsi/checkpoint/net_params_100000'
 predict(net_params=net_params)
 ```
-
+The result is shown as below:
+<div align="center">
+<img src="image/VIV_eq.png" width = "200" align=center />
+</div>
 
