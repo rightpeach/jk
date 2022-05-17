@@ -117,6 +117,6 @@ predict(net_params=net_params)
 ```
 The result is shown as below:
 <div align="center">
-<img src="image/VIV_eq.png" width = "200" align=center />
+<img src="image/viv.png" width = "400" align=center />
 </div>
 
