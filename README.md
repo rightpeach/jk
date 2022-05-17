@@ -7,161 +7,123 @@ This guide introduces how to build a PINN model with continuous time method for 
 The 2d unsteady cylinder flow example simulate solution (pressure and velocity) of following problem
 
 <div align="center">    
-<img src="NS.png" width = "400" align=center />
+<img src="image/NS.png" width = "400" align=center />
 </div>
 
 
 Following graphs plot the horizional velocity from training the model on given node from openFoam.
 <div align="center">    
-<img src="cylinder_openfoam.png" width = "400" align=center />
+<img src="image/cylinder_openfoam.png" width = "400" align=center />
 </div>
 
 The result which is simulated through PINNs is showned as below, and the result is almost the same as the result from openfoam
 <div align="center">    
-<img src="result.png" width = "400" align=center />
+<img src="image/result.png" width = "400" align=center />
 </div>
 
 ## How to run the model 
 
-1) Model composition
+### Model composition
+
 The model contains 4 main parts, which are datasets, pinn_solver, train or predict code, dataload module.
 
-2) Run model
+### Run model
 
-    a. download PaddleScience code
+ **a. Download PaddleScience code**
+ 
         
-    - confirm working directory
+   - Confirm working directory
         
-    - downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:   
+   - Downlaod paddlescience code from  [github](https://github.com/PaddlePaddle/PaddleScience), git clone is also worked by the following code:   
         
-        
-    ```
     git clone https://github.com/PaddlePaddle/PaddleScience.git
-    ```
 
-    - rename the folder name as PaddleScience  
+ **b. Install dependent libraries**
+ 
+    
+   - Rename the folder name as PaddleScience if not
+    
+   - Change working directory to PaddleScience
+    
+   - Install dependent libraries by `pip install -r requirements` 
+    
+ **c.Set environment variables**
+ 
+    
+   **-Set environment** 
+    
+   Setting environment by `%env PYTHONPATH=/user_path*/PaddleScience`, and if editing bash files, using `export PYTHONPATH=$PYTHONPATH:/user_path*/PaddleScience/` instead
+ 
+ **d. Start simulation**
+ 
+    
+   **-Loading data**
+   
+   
+   The trainning data and supervised data were came from openFoam, and loaded before simulation.
+
+    # Loading data from openfoam 
+    path = './examples/cylinder/2D_unsteady/datasets/'
+    dataloader = cfd.DataLoader(path=path, N_f=9000, N_b=1000, time_start=1, time_end=50, time_nsteps=50)
+    training_time_list = dataloader.select_discretized_time(num_time=30)
+    
+   **-Define fluid properties**
+   
+    
+   Before starting a 2d unsteady cylinder flow simulation, we set up the flow domain as below, and the grid was loaded from openFoam. 
+    <div align="center">    
+    <img src="image/cylinder_grid.png" width = "400" align=center />
+    </div>
+    
+   The fluid propery can be defined by nu which means the fluid viscosity, Based on the Reynolds number equation `Re=U*D/nu`, the default inlet velocity is constant 2, and the Reynolds number can be changed by changing the viscosity only. 
+   In this model, the default Reynolds number is 100, and the cylinder diameter is 1, so the viscosity can be 0.02.
+    
+   **-Define Loss weight**
+   
+    
+   Loss function consist of eq_loss, bc_loss, ic_loss, outlet_loss and supervised_data_loss, and each of these terms has a weight. The weight of each items can be changed when training.
+
+    PINN = psolver.PysicsInformedNeuralNetwork(
+        layers=6, nu=2e-2, bc_weight=10, eq_weight=1, ic_weight=10, supervised_data_weight=10, 
+        outlet_weight=1, training_type='half-supervised', checkpoint_path='./examples/cylinder/2D_unsteady/checkpoint/', 
+        net_params=net_params, distributed_env=distributed_env)
+
+   **-Define training parameters**
+   
+    
+   By default, a fully connected neural network is used, and the network information is defined as 10* 50：
+
+    def initialize_NN(self, num_ins=3, num_outs=3, num_layers=10, hidden_size=50):
+        return psci.network.FCNet(
+            num_ins=num_ins,
+            num_outs=num_outs,
+            num_layers=num_layers,
+            hidden_size=hidden_size,
+            dtype="float32",
+            activation='tanh')
+
+
+   Adam is currently selected as the optimizer, and default training epoch numbers and learning rate are as follow:
+
+    adm_opt = paddle.optimizer.Adam(learning_rate=1e-5, parameters=PINN.net.parameters())
+    PINN.train(num_epoch=10, optimizer=adm_opt)
+    
+   **-Training Model**
+   
+   
+   This use case has provided the pre-trained network and saved it in the checkpoint folder. The pre-trained network can be used to continue training when defining ` net_params = './examples/cylinder/2D_unsteady/checkpoint/pretrained_net_params'` in cylinder2d_unsteady_train.py, and if set` net_params = None`，a whole new training process is about to begin。
       
+    net_params = './examples/cylinder/2D_unsteady/checkpoint/pretrained_net_params'
+    train(net_params=net_params)
+   
+   **-Predictint Model**
+   
+   
+   After the training, the optimal network will be generated and saved in checkpoint. Selecting the network and execute`python cylinder2d_unsteady_train.py`.
+   While predicting, vtk files can be generated and saved in vtk folder. these *vtu* files can be showen in as datas and graphs by importing [Paraview](https://www.paraview.org/).
 
+    if __name__ == "__main__":
+        net_params = './examples/cylinder/2D_unsteady/checkpoint/pretrained_net_params'
+        vtk_filename = './examples/cylinder/2D_unsteady/vtk/uvp_t_'
+        predict_once_for_all(net_params=net_params, vtk_filename=vtk_filename)
 
-A PINN model is jointly composed using what used to be a traditional PDE setup and
-1
-A PINN model is jointly composed using what used to be a traditional PDE setup and
-a neural net approximating the solution. The PDE part includes specific
-differential equations enforcing the physical law, a geometry that bounds
-the problem domain and the initial and boundary value conditions which make it
-possible to find a solution. The neural net part can take variants of a typical
-feed forward network widely found in deep learning toolkits.
-
-To obtain the PINN model requires training the neural net. It's in this phase that
-the information of the PDE gets instilled into the neural net through back propagation.
-The loss function plays a crucial role in controlling how this information gets dispensed
-emphasizing different aspects of the PDE, for instance, by adjusting the weights for
-the equation residues and the boundary values.
-
-Once the concept is clear, next let's take a look at how this translates into the
-dacy2d example.
-
-### Constructing PDE
-
-First, define the problem geometry using the `psci.geometry` module interface. In this example,
-the geometry is a rectangle with the origin at coordinates (0.0, 0.0) and the extent set
-to (1.0, 1.0).
-
-```
-geo = psci.geometry.Rectangular(
-    space_origin=(0.0, 0.0), space_extent=(1.0, 1.0))
-```
-
-Next, define the PDE equations to solve. In this example, the equations are a 2d
-Laplace. This equation is present in the package, and one only needs to
-create a `psci.pde.Laplace2D` object to set up the equation.
-
-```
-pdes = psci.pde.Laplace2D()
-```
-
-Once the equation and the problem domain are prepared, a discretization
-recipe should be given. This recipe will be used to generate the training data
-before training starts. Currently, the 2d space can be discretized into a N by M
-grid, 101 by 101 in this example specifically.
-
-```
-pdes, geo = psci.discretize(pdes, geo, space_steps=(101, 101))
-```
-
-As mentioned above, a valid problem setup relies on sufficient constraints on
-the boundary and initial values. In this example, we use analytical solution on the boundary, and by calling `pdes.set_bc_value()` the
-values are then passed to the PDE solver.
-It's worth noting however that in general the boundary and initial value
-conditions can be passed as a function to the solver rather than actual values.
-That feature will be addressed in the future.
-
-```
-pdes.set_bc_value(bc_value=bc_value)
-```
-
-### Constructing the neural net
-
-Now the PDE part is almost done, we move on to constructing the neural net.
-It's straightforward to define a fully connected network by creating a `psci.network.FCNet` object.
-Following is how we create an FFN of 5 hidden layers with 20 neurons on each, using hyperbolic
-tangent as the activation function.
-
-```
-net = psci.network.FCNet(
-    num_ins=2,
-    num_outs=3,
-    num_layers=5,
-    hidden_size=20,
-    dtype="float32",
-    activation='tanh')
-```
-
-Next, one of the most important steps is define the loss function. Here we use L2
-loss with custom weights assigned to the boundary values.
-
-```
-loss = psci.loss.L2(pdes=pdes,
-                    geo=geo,
-                    eq_weight=0.01,
-                    bc_weight=bc_weight,
-                    synthesis_method='norm')
-```
-
-By design, the `loss` object conveys complete information of the PDE and hence the
-latter is eclipsed in further steps. Now combine the neural net and the loss and we
-create the `psci.algorithm.PINNs` model algorithm.
-
-```
-algo = psci.algorithm.PINNs(net=net, loss=loss)
-```
-
-Next, by plugging in an Adam optimizer, a solver is contructed and you are ready
-to kick off training. In this example, the Adam optimizer is used and is given
-a learning rate of 0.001. 
-
-The `psci.solver.Solver` class bundles the PINNs model, which is called `algo` here,
-and the optimizer, into a solver object that exposes the `solve` interface.
-`solver.solve` accepts three key word arguments. `num_epoch` specicifies how many
-epoches for each batch. `checkpoint_freq` sets for how many epochs the network parameters are
-saved in local file system.
-
-
-```
-opt = psci.optimizer.Adam(learning_rate=0.001, parameters=net.parameters())
-solver = psci.solver.Solver(algo=algo, opt=opt)
-solution = solver.solve(num_epoch=30000)
-```
-
-Finally, `solver.solve` returns a function that calculates the solution value
-for given points in the geometry. Apply the function to the geometry, convert the
-outputs to Numpy and then you can verify the results. 
-
-`psci.visu.visu_vtk` is a helper utility for quick visualization. It saves
-the graphs in vtp file which one can play using [Paraview](https://www.paraview.org/).
-
-```
-rslt = solution(geo).numpy()
-psci.visu.save_vtk(geo, rslt, 'rslt_darcy_2d')
-np.save(rslt, 'rslt_darcy_2d.npy')
-```
